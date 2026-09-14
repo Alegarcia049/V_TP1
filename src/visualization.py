@@ -142,3 +142,56 @@ def plot_keypoint_distribution(
 
     ax.set_xlabel("x [px]")
     ax.set_ylabel("y [px]")
+
+def draw_matches(
+    image_src,
+    image_dst,
+    keypoints_src: list,
+    keypoints_dst: list,
+    matches: list,
+    max_matches: int | None = None,
+):
+    if max_matches is not None:
+        matches = sorted(matches, key=lambda match: match.distance)[:max_matches]
+
+    return cv2.drawMatches(
+        image_src,
+        keypoints_src,
+        image_dst,
+        keypoints_dst,
+        matches,
+        None,
+        matchColor=(0, 0, 255),
+        flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
+    )
+
+def plot_matches(
+    image_src,
+    image_dst,
+    keypoints_src: list,
+    keypoints_dst: list,
+    matches: list,
+    max_matches: int | None = None,
+    title: str | None = None,
+    figsize: tuple[int, int] = (16, 8),
+):
+    rendered = draw_matches(
+        image_src,
+        image_dst,
+        keypoints_src,
+        keypoints_dst,
+        matches,
+        max_matches=max_matches,
+    )
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.imshow(cv2.cvtColor(rendered, cv2.COLOR_BGR2RGB))
+    ax.axis("off")
+
+    if title is None:
+        title = f"Matches: {len(matches)}"
+
+    if max_matches is not None:
+        title += f" (showing {min(max_matches, len(matches))} matches)"
+
+    ax.set_title(title)
