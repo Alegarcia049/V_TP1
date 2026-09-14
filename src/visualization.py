@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 import matplotlib.pyplot as plt
 
 from src.features import FeatureSet
@@ -6,7 +7,7 @@ from src.features import FeatureSet
 
 def draw_keypoints(
     image,
-    features: FeatureSet,
+    keypoints,
     rich: bool = True,
 ):
     flags = (
@@ -17,8 +18,9 @@ def draw_keypoints(
 
     return cv2.drawKeypoints(
         image,
-        features.keypoints,
+        keypoints,
         None,
+        color=(255, 0, 0),
         flags=flags,
     )
 
@@ -28,7 +30,10 @@ def plot_features(
     features: FeatureSet,
     title: str | None = None,
 ):
-    rendered = draw_keypoints(image, features)
+    rendered = draw_keypoints(
+        image,
+        features.keypoints,
+    )
 
     fig, ax = plt.subplots(figsize=(12, 8))
 
@@ -40,60 +45,88 @@ def plot_features(
             f"{title} — {len(features.keypoints)} keypoints"
         )
 
-    return fig
 
-def plot_feature_comparison(
+def plot_keypoint_comparison(
     image,
-    before: FeatureSet,
-    after: FeatureSet,
-    titles=("Detected features", "After ANMS"),
+    before,
+    after,
+    titles=("Detected keypoints", "After ANMS"),
 ):
     before_image = draw_keypoints(image, before)
     after_image = draw_keypoints(image, after)
 
     fig, axes = plt.subplots(1, 2, figsize=(16, 7))
 
-    for ax, rendered, features, title in zip(
+    for ax, rendered, keypoints, title in zip(
         axes,
         (before_image, after_image),
         (before, after),
         titles,
     ):
         ax.imshow(cv2.cvtColor(rendered, cv2.COLOR_BGR2RGB))
-        ax.set_title(f"{title} — {len(features.keypoints)} keypoints")
+        ax.set_title(
+            f"{title} — {len(keypoints)} keypoints"
+        )
         ax.axis("off")
 
-    return fig
 
 def plot_sift_descriptor(
     features: FeatureSet,
     index: int,
 ):
     descriptor = features.descriptors[index]
-    histogram = descriptor.reshape(16, 8)
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    grid_size = 4
+    orientation_bins = 8
 
-    image = ax.imshow(
-        histogram,
-        aspect="auto",
+    histogram = descriptor.reshape(
+        grid_size,
+        grid_size,
+        orientation_bins,
     )
 
+    max_magnitude = histogram.max()
+
+    fig, ax = plt.subplots(figsize=(7, 7))
+
+    for row in range(grid_size):
+        for col in range(grid_size):
+            center_x = col + 0.5
+            center_y = row + 0.5
+
+            for bin_index, magnitude in enumerate(histogram[row, col]):
+                angle = 2 * np.pi * bin_index / orientation_bins
+                length = 0.45 * magnitude / max_magnitude
+
+                dx = length * np.cos(angle)
+                dy = length * np.sin(angle)
+
+                ax.plot(
+                    [center_x - dx, center_x + dx],
+                    [center_y - dy, center_y + dy],
+                    linewidth=1.5,
+                )
+
+    ax.set_xlim(0, grid_size)
+    ax.set_ylim(grid_size, 0)
+    ax.set_aspect("equal")
+
+    ax.set_xticks(range(grid_size + 1))
+    ax.set_yticks(range(grid_size + 1))
+    ax.grid(True)
+
     ax.set_title(f"SIFT descriptor — keypoint {index}")
-    ax.set_xlabel("Orientation bin")
-    ax.set_ylabel("Spatial cell")
+    ax.set_xlabel("Spatial cell x")
+    ax.set_ylabel("Spatial cell y")
 
-    fig.colorbar(image, ax=ax, label="Magnitude")
-
-    return fig
 
 def plot_keypoint_distribution(
     image,
-    features: FeatureSet,
+    keypoints,
     title: str | None = None,
 ):
-    xs = [kp.pt[0] for kp in features.keypoints]
-    ys = [kp.pt[1] for kp in features.keypoints]
+    xs = [kp.pt[0] for kp in keypoints]
+    ys = [kp.pt[1] for kp in keypoints]
 
     height, width = image.shape[:2]
 
@@ -109,5 +142,3 @@ def plot_keypoint_distribution(
 
     ax.set_xlabel("x [px]")
     ax.set_ylabel("y [px]")
-
-    return fig

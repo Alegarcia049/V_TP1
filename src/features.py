@@ -13,19 +13,26 @@ class FeatureSet:
 
 
 class SIFT:
-
-    def __init__(self, max_keypoints: int):
-        self.max_keypoints = max_keypoints
+    def __init__(self):
         self.algorithm = cv2.SIFT_create()
 
     def preprocess(self, image: np.ndarray) -> np.ndarray:
         return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    def extract(self, image: np.ndarray) -> FeatureSet:
-        gray = self.preprocess(image)
+    def detect(self, image: np.ndarray) -> list[cv2.KeyPoint]:
+        image = self.preprocess(image)
+        return self.algorithm.detect(image, None)
 
-        keypoints = self.algorithm.detect(gray, None)
-        keypoints = anms(keypoints, self.max_keypoints)
-        keypoints, descriptors = self.algorithm.compute(gray, keypoints)
+    def describe(
+        self,
+        image: np.ndarray,
+        keypoints: list[cv2.KeyPoint],
+    ) -> FeatureSet:
+        image = self.preprocess(image)
 
-        return FeatureSet(keypoints, descriptors)
+        keypoints, descriptors = self.algorithm.compute(image, keypoints)
+
+        return FeatureSet(
+            keypoints=keypoints,
+            descriptors=descriptors,
+        )
