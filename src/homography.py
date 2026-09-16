@@ -4,7 +4,13 @@ import numpy as np
 def normalize_points(
     points: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-
+    """
+    Traslada el centroide de los puntos al origen 
+    y escala para que la distancia media de los puntos
+    al origen sea de sqrt(2), es decir que todos entren
+    en un círculo unitario centrado al origen.
+    Es una mejora de estabilidad numérica para usar SVD.
+    """
     centroid = np.mean(points, axis=0)
     centered = points - centroid
 
@@ -14,6 +20,7 @@ def normalize_points(
 
     scale = np.sqrt(2) / mean_distance
 
+    # Entonces la matriz de normalización
     T = np.array([
         [scale, 0, -scale * centroid[0]],
         [0, scale, -scale * centroid[1]],
@@ -33,19 +40,22 @@ def _build_dlt_matrix(
     n = len(src_points)
     A = np.zeros((2 * n, 9), dtype=np.float64)
 
-    for i, ((x, y), (u, v)) in enumerate(
+    # De forma stackeada, todas las matrices A_i del sistema lineal homogéneo
+    for i, ((x, y), (x_prima, y_prima)) in enumerate(
         zip(src_points, dst_points)
     ):
+        # la primera columna de A_i
         A[2 * i] = [
             -x, -y, -1,
             0, 0, 0,
-            x * u, y * u, u,
+            x * x_prima, y * x_prima, x_prima,
         ]
 
+        # la segunda columna de A_i
         A[2 * i + 1] = [
             0, 0, 0,
             -x, -y, -1,
-            x * v, y * v, v,
+            x * y_prima, y * y_prima, y_prima,
         ]
 
     return A
@@ -66,8 +76,11 @@ def dlt_homography(
 
     _, _, Vt = np.linalg.svd(A)
 
+    # La solución por SVD para LST resulta el autovector de menor valor singular
     H_normalized = Vt[-1].reshape(3, 3)
 
+    # Como los puntos fueron normalizados, hay que reconstruir la homografía original
+    # considerando T_dst @ H = H_normalized @ T_src
     H = (
         np.linalg.inv(T_dst)
         @ H_normalized
@@ -89,7 +102,20 @@ def project_points(
 
     projected = (H @ homogeneous.T).T
 
-    return projected[:, :2] / projected[:, 2, None]
+    cartesian = np.full(
+        (len(points), 2),
+        np.nan,
+        dtype=np.float64,
+    )
+
+    np.divide(
+        projected[:, :2],
+        projected[:, 2, None],
+        out=cartesian,
+        where=projected[:, 2, None] != 0,
+    )
+
+    return cartesian
 
 
 def reprojection_errors(

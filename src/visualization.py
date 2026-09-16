@@ -195,3 +195,4 @@ def plot_matches(
         title += f" (showing {min(max_matches, len(matches))} matches)"
 
     ax.set_title(title)
+    plt.show()
