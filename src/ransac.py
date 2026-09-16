@@ -1,7 +1,5 @@
 from dataclasses import dataclass
-
 import numpy as np
-
 from src.homography import dlt_homography, reprojection_errors
 
 

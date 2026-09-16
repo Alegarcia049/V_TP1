@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-
 from src.features import FeatureSet
 
 
@@ -23,6 +22,7 @@ def draw_keypoints(
         color=(255, 0, 0),
         flags=flags,
     )
+    plt.show()
 
 
 def plot_features(
@@ -44,7 +44,7 @@ def plot_features(
         ax.set_title(
             f"{title} — {len(features.keypoints)} keypoints"
         )
-
+    plt.show()
 
 def plot_keypoint_comparison(
     image,
@@ -68,7 +68,7 @@ def plot_keypoint_comparison(
             f"{title} — {len(keypoints)} keypoints"
         )
         ax.axis("off")
-
+    plt.show()
 
 def plot_sift_descriptor(
     features: FeatureSet,
@@ -118,6 +118,7 @@ def plot_sift_descriptor(
     ax.set_title(f"SIFT descriptor — keypoint {index}")
     ax.set_xlabel("Spatial cell x")
     ax.set_ylabel("Spatial cell y")
+    plt.show()
 
 
 def plot_keypoint_distribution(
@@ -142,6 +143,7 @@ def plot_keypoint_distribution(
 
     ax.set_xlabel("x [px]")
     ax.set_ylabel("y [px]")
+    plt.show()
 
 def draw_matches(
     image_src,
