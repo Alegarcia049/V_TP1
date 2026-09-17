@@ -100,6 +100,7 @@ def warp_images(
 
 def compute_blending_weights(
     masks: list[np.ndarray],
+    power: float = 1.0,
 ) -> list[np.ndarray]:
 
     weights = []
@@ -124,7 +125,9 @@ def compute_blending_weights(
 
         # El padding no nos sirve para la distancia final
         # queremos quedarnos con lo que está dentro
-        weights.append(distance[1:-1, 1:-1])
+        # elevar la distancia a una potencia angosta la zona de mezcla:
+        # en el solapamiento domina la imagen más alejada de su borde
+        weights.append(distance[1:-1, 1:-1] ** power)
 
     return weights
 
